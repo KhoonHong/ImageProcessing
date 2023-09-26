@@ -1,0 +1,262 @@
+{% extends 'base.html' %}
+
+{% block content %}{% csrf_token %}
+<div id="layoutSidenav_content">
+    <main>
+        <div class="container-fluid px-4">
+            <h1 class="mt-4">Morphological Methods</h1>
+            <ol class="breadcrumb mb-4">
+                <li class="breadcrumb-item active">Model Creation, Feature Extraction, Comparison & Detection</li>
+            </ol>
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-table me-1"></i>
+                    Configure the Settings
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-4">
+                            <div id="preprocessing" class="card text-bg-primary mb-3 green-card">
+                                <div class="card-header">Preprocessing</div>
+                                <div class="card-body">
+                                    <div class="pb-3">
+                                        Colour Transformation:
+                                        <div class="form-check form-switch" style="margin-bottom: 20px;">
+                                            <input class="form-check-input" type="checkbox" role="switch"
+                                                id="grayscale_switch">
+                                            <label class="form-check-label" for="grayscale_switch">Grayscale or Binary
+                                                based</label>
+                                        </div>
+                                    </div>
+                                    <div class="pb-3">
+                                        Select Filtering Methods:
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="filtering-radio"
+                                                id="gaussian-radio" value="Gaussian Filters" checked>
+                                            <label class="form-check-label" for="gaussian-radio">
+                                                Gaussian Filters
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="filtering-radio"
+                                                id="median-radio" value="Median Filters">
+                                            <label class="form-check-label" for="median-radio">
+                                                Median Filters
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="filtering-radio"
+                                                id="no-filter-radio" value="No Filters">
+                                            <label class="form-check-label" for="no-filter-radio">
+                                                No Filters
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <button id="next-erosion-dilation" type="button"
+                                        class="btn btn-primary float-end">Next</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <img id="image" src="{{ image.image.url }}" height="500px" width="500px" alt="Main Image"
+                                class="img-fluid">
+                        </div>
+                        <div class="col-4">
+                            <div class="row">
+                                <div id="erosion-dilation" class="card text-bg-primary mb-3 disabled-card green-card">
+                                    <div class="card-header">Erosion and Dilation</div>
+                                    <div class="card-body">
+                                        <div class="pb-3">
+                                            <div class="form-check form-switch" style="margin-bottom: 20px;">
+                                                <label class="form-check-label" for="erosion_switch">Erosion</label>
+                                                <input class="form-check-input" type="checkbox" role="switch"
+                                                    id="erosion_switch">
+                                            </div>
+                                            <div class="form-check form-switch" style="margin-bottom: 20px;">
+                                                <label class="form-check-label" for="dilation_switch">Dilation</label>
+                                                <input class="form-check-input" type="checkbox" role="switch"
+                                                    id="dilation_switch">
+                                            </div>
+                                        </div>
+                                        <button id="prev-preprocessing" type="button"
+                                            class="btn btn-primary">Back</button>
+                                        <button id="next-opening-closing" type="button"
+                                            class="btn btn-primary float-end">Next</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div id="opening-closing" class="card text-bg-primary mb-3 disabled-card green-card">
+                                    <div class="card-header">Opening or Closing</div>
+                                    <div class="card-body">
+                                        <div class="pb-3">
+                                            <div class="form-check form-switch" style="margin-bottom: 20px;">
+                                                <label class="form-check-label" for="opening_switch">Opening</label>
+                                                <input class="form-check-input" type="checkbox" role="switch"
+                                                    id="opening_switch">
+                                            </div>
+                                            <div class="form-check form-switch" style="margin-bottom: 20px;">
+                                                <label class="form-check-label" for="closing_switch">Closing</label>
+                                                <input class="form-check-input" type="checkbox" role="switch"
+                                                    id="closing_switch">
+                                            </div>
+                                        </div>
+                                        <button id="prev-erosion-dilation" type="button"
+                                            class="btn btn-primary">Back</button>
+                                        <button id="end-morphological-methods" type="button"
+                                            class="btn btn-primary float-end" onclick="doneAction()">Done</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    <footer class="py-4 bg-light mt-auto">
+        <div class="container-fluid px-4">
+            <div class="d-flex align-items-center justify-content-between small">
+                <div class="text-muted">Copyright &copy; AshleyChewKaiWenn ChongKahJie LeeKhoonHong OngKuanLin 2023
+                </div>
+            </div>
+        </div>
+    </footer>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+
+    document.addEventListener("DOMContentLoaded", function () {
+        let timeoutId = null;
+        function gatherData() {
+            let formData = new FormData();
+
+            // For all range inputs
+            let rangeInputs = document.querySelectorAll('input[type="range"]');
+            rangeInputs.forEach((input) => {
+                formData.append(input.id, input.value);
+            });
+
+            // For all checkboxes
+            let checkboxes = document.querySelectorAll('input[type="checkbox"]');
+            checkboxes.forEach((checkbox) => {
+                formData.append(checkbox.id, checkbox.checked ? "on" : "off");
+            });
+
+            // For all radios
+            let radioGroups = {}; // Object to store the selected radio value for each group
+
+            let radios = document.querySelectorAll('input[type="radio"]');
+            radios.forEach((radio) => {
+                // Check if this radio button belongs to a group
+                if (radio.name) {
+                    // If a radio with the same name is already checked, skip it
+                    if (radio.checked && !radioGroups.hasOwnProperty(radio.name)) {
+                        radioGroups[radio.name] = radio.value;
+                    }
+                }
+            });
+
+            // Append the selected radio values to the formData
+            for (let groupName in radioGroups) {
+                formData.append(groupName, radioGroups[groupName]);
+            }
+
+            // get the image
+            let image = document.getElementById("image");
+            formData.append("image", image.src);
+
+            return formData;
+        }
+
+        // Function to perform the actual POST request
+        function performPostData() {
+            fetch("/morphological_methods_demo/", {
+                method: "POST",
+                body: gatherData(),
+                headers: {
+                    "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]")
+                        .value,
+                },
+            })
+                .then((response) => response.json())
+                .then((data) => {
+                    console.log(data);
+                    // Update the image
+                    let image = document.getElementById("image");
+                    let splitArray = image.src.split("/");
+                    splitArray[splitArray.length - 1] = data.image_url;
+                    image.src = splitArray.join("/");
+                    console.log(image.src);
+
+                })
+                .catch((error) => {
+                    console.error("Error:", error);
+                });
+        }
+
+        // Debounced postData function
+        function postData() {
+            // Clear any existing timeout
+            if (timeoutId !== null) {
+                clearTimeout(timeoutId);
+            }
+
+            // Set a new timeout to delay the execution of performPostData by 500 milliseconds (1 second)
+            timeoutId = setTimeout(performPostData, 500);
+        }
+
+        // Add event listeners to all the range and checkbox inputs
+        let rangeInputs = document.querySelectorAll('input[type="range"]');
+        rangeInputs.forEach((input) => {
+            input.addEventListener("input", postData);
+        });
+
+        let checkboxes = document.querySelectorAll('input[type="checkbox"]');
+        checkboxes.forEach((checkbox) => {
+            checkbox.addEventListener("change", postData);
+        });
+
+        let radios = document.querySelectorAll('input[type="radio"]');
+        radios.forEach((radio) => {
+            radio.addEventListener("change", postData);
+        });
+    });
+
+    
+    var checkboxes = document.getElementsByClassName("image-checkbox");
+
+    for (var i = 0; i < checkboxes.length; i++) {
+        checkboxes[i].addEventListener("click", function () {
+            this.classList.toggle("show", this.checked);
+            this.classList.toggle("hide", !this.checked);
+        });
+    }
+
+    $(document).ready(function () {
+        $("#next-erosion-dilation").click(function () {
+            $("#erosion-dilation").removeClass("disabled-card");
+            $("#preprocessing").addClass("disabled-card");
+        });
+        $("#next-opening-closing").click(function () {
+            $("#erosion-dilation").addClass("disabled-card");
+            $("#opening-closing").removeClass("disabled-card");
+        });
+        $("#prev-preprocessing").click(function () {
+            $("#erosion-dilation").addClass("disabled-card");
+            $("#preprocessing").removeClass("disabled-card");
+        });
+        $("#prev-erosion-dilation").click(function () {
+            $("#opening-closing").addClass("disabled-card");
+            $("#erosion-dilation").removeClass("disabled-card");
+        });
+    });
+
+    function doneAction() {
+        alert("Your action was completed successfully! Please proceed to Anomaly Detection.");
+        window.location.href = "/";  // This redirects to the homepage
+    }
+</script>
+{% endblock %}

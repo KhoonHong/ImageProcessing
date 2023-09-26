@@ -1,0 +1,490 @@
+{% extends 'base.html' %}
+
+{% block content %}
+{% csrf_token %}
+<div id="layoutSidenav_content">
+    <main>
+        <div class="container-fluid px-4">
+            <h1 class="mt-4">Image Registration or Alignment</h1>
+            <ol class="breadcrumb mb-4">
+                <li class="breadcrumb-item active">Feature Detection, Image Matching, Transformation Calculation, Image
+                    Alignment</li>
+            </ol>
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-table me-1"></i>
+                    Configure the Settings
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-4">
+                            <div id="feature-detection" class="card text-bg-primary mb-3 yellow-card">
+                                <div class="card-header">Feature Detection</div>
+                                <div class="card-body">
+                                    <nav>
+                                        <div class="nav nav-tabs" id="nav-tab" role="tablist">
+                                            <button class="nav-link active" id="nav-home-tab" data-bs-toggle="tab"
+                                                data-bs-target="#nav-home" type="button" role="tab"
+                                                aria-controls="nav-home" aria-selected="true">
+                                                SIFT
+                                            </button>
+                                            <button class="nav-link" id="nav-profile-tab" data-bs-toggle="tab"
+                                                data-bs-target="#nav-profile" type="button" role="tab"
+                                                aria-controls="nav-profile" aria-selected="false">
+                                                ORB
+                                            </button>
+                                    </nav>
+                                    <div class="tab-content" id="nav-tabContent">
+                                        <div class="tab-pane fade show active" id="nav-home" role="tabpanel"
+                                            aria-labelledby="nav-home-tab">
+                                            <div class="form-check form-switch"
+                                                style="margin-top: 20px; margin-bottom: 20px;">
+                                                <input class="form-check-input" type="checkbox" role="switch"
+                                                    id="SIFT_switch">
+                                                <label class="form-check-label" for="SIFT_switch">Scale-Invariant
+                                                    Feature Transform</label>
+                                            </div>
+                                            <label for="sift_nfeatures_range" class="form-label">nfeatures: </label>
+                                            <output id="sift_nfeatures_output">500</output>
+                                            <input type="range" class="form-range" id="sift_nfeatures_range" min="100"
+                                                max="1000" oninput="updateOutput(this.id, this.value)"
+                                                aria-label="Custom range" />
+
+                                            <label for="sift_nOctaveLayers_range" class="form-label">nOctaveLayers:
+                                            </label>
+                                            <output id="sift_nOctaveLayers_output">4</output>
+                                            <input type="range" class="form-range" id="sift_nOctaveLayers_range" min="2"
+                                                max="6" oninput="updateOutput(this.id, this.value)"
+                                                aria-label="Custom range" />
+
+                                            <label for="sift_contrastThreshold_range"
+                                                class="form-label">contrastThreshold: </label>
+                                            <output id="sift_contrastThreshold_output">0.03</output>
+                                            <input type="range" class="form-range" id="sift_contrastThreshold_range"
+                                                min="0.02" max="0.04" step="0.001"
+                                                oninput="updateOutput(this.id, this.value)" aria-label="Custom range" />
+
+                                            <label for="sift_edgeThreshold_range" class="form-label">edgeThreshold:
+                                            </label>
+                                            <output id="sift_edgeThreshold_output">15</output>
+                                            <input type="range" class="form-range" id="sift_edgeThreshold_range"
+                                                min="10" max="20" oninput="updateOutput(this.id, this.value)"
+                                                aria-label="Custom range" />
+
+                                            <label for="sift_sigma_range" class="form-label">sigma: </label>
+                                            <output id="sift_sigma_output">1.5</output>
+                                            <input type="range" class="form-range" id="sift_sigma_range" min="1.0"
+                                                max="2.0" step="0.1" oninput="updateOutput(this.id, this.value)"
+                                                aria-label="Custom range" />
+
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" role="switch"
+                                                    id="sift_enablepreciseupscale_switch" />
+                                                <label class="form-check-label"
+                                                    for="sift_enablepreciseupscale_switch">enable_precise_upscale</label>
+                                            </div>
+                                        </div>
+                                        <div class="tab-pane fade" id="nav-profile" role="tabpanel"
+                                            aria-labelledby="nav-profile-tab">
+                                            <div class="form-check form-switch"
+                                                style="margin-top: 20px; margin-bottom: 20px;">
+                                                <input class="form-check-input" type="checkbox" role="switch"
+                                                    id="ORB_switch">
+                                                <label class="form-check-label" for="ORB_switch">Oriented
+                                                    FAST
+                                                    and
+                                                    Rotated BRIEF</label>
+                                            </div>
+                                            <label for="ORB_nfeatures_range" class="form-label">n_features: </label>
+                                            <output id="ORB_nfeatures_output">500</output>
+                                            <input type="range" class="form-range" id="ORB_nfeatures_range" min="100"
+                                                max="1000" oninput="updateOutput(this.id, this.value)"
+                                                aria-label="Custom range" />
+
+                                            <label for="ORB_scaleFactor_range" class="form-label">scaleFactor: </label>
+                                            <output id="ORB_scaleFactor_output">1</output>
+                                            <input type="range" class="form-range" id="ORB_scaleFactor_range" min="1"
+                                                max="2" step="0.1" oninput="updateOutput(this.id, this.value)"
+                                                aria-label="Custom range" />
+
+                                            <label for="ORB_nLevels_range" class="form-label">nLevels: </label>
+                                            <output id="ORB_nLevels_output">6</output>
+                                            <input type="range" class="form-range" id="ORB_nLevels_range" min="4"
+                                                max="8" oninput="updateOutput(this.id, this.value)"
+                                                aria-label="Custom range" />
+
+                                            <label for="ORB_edgeThreshold_range" class="form-label">edgeThreshold:
+                                            </label>
+                                            <output id="ORB_edgeThreshold_output">30</output>
+                                            <input type="range" class="form-range" id="ORB_edgeThreshold_range" min="10"
+                                                max="50" oninput="updateOutput(this.id, this.value)"
+                                                aria-label="Custom range" />
+
+                                            <label for="ORB_firstLevel_range" class="form-label">firstLevel: </label>
+                                            <output id="ORB_firstLevel_output">2</output>
+                                            <input type="range" class="form-range" id="ORB_firstLevel_range" min="0"
+                                                max="5" oninput="updateOutput(this.id, this.value)"
+                                                aria-label="Custom range" />
+
+                                            <label for="ORB_WTAK_range" class="form-label">WTA_K: </label>
+                                            <output id="ORB_WTAK_output">2</output>
+                                            <input type="range" class="form-range" id="ORB_WTAK_range" min="1" max="3"
+                                                oninput="updateOutput(this.id, this.value)" aria-label="Custom range" />
+
+                                            <label for="ORB_patchSize_range" class="form-label">patchSize: </label>
+                                            <output id="ORB_patchSize_output">40</output>
+                                            <input type="range" class="form-range" id="ORB_patchSize_range" min="9"
+                                                max="71" oninput="updateOutput(this.id, this.value)"
+                                                aria-label="Custom range" />
+
+                                            <label for="ORB_fastThreshold_range" class="form-label">fastThreshold:
+                                            </label>
+                                            <output id="ORB_fastThreshold_output">50</output>
+                                            <input type="range" class="form-range" id="ORB_fastThreshold_range" min="10"
+                                                max="100" oninput="updateOutput(this.id, this.value)"
+                                                aria-label="Custom range" />
+
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="ORB_scoreType_radio"
+                                                    id="ORB_FASTSCORE_radio" checked />
+                                                <label class="FAST_SCORE_label" for="ORB_FASTSCORE_radio">
+                                                    FAST_SCORE
+                                                </label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="ORB_scoreType_radio"
+                                                    id="ORB_HARRISSCORE_radio" />
+                                                <label class="HARRIS_SCORE_label" for="ORB_HARRISSCORE_radio">
+                                                    HARRIS_SCORE
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button id="next-image-matching" type="button"
+                                        class="btn btn-primary float-end">Next</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="row">
+                                <h6>Reference</h6>
+                                <img id="image_reference" src="{{ reference_image.image.url }}" height="500px"
+                                    width="500px" alt="Main Image" class="img-fluid" />
+                            </div>
+                            <div class="row">
+                                <h6>Random</h6>
+                                <img id="image_random" src="{{ random_image.image.url }}" height="500px" width="500px"
+                                    alt="Main Image" class="img-fluid" />
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="row">
+                                <div id="image-matching" class="card text-bg-primary mb-3 disabled-card yellow-card">
+                                    <div class="card-header">Image Matching</div>
+                                    <div class="card-body">
+                                        <div class="pb-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="image-matching-radio"
+                                                    id="FLANN-radio" value="FLANN-radio" checked />
+                                                <label class="form-check-label" for="FLANN-radio">
+                                                    FLANN
+                                                </label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="image-matching-radio"
+                                                    id="brute-force-radio" value="brute-force-radio" checked />
+                                                <label class="form-check-label" for="brute-force-radio">
+                                                    Brute-force matcher
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <button id="prev-feature-detection" type="button"
+                                            class="btn btn-primary">Back</button>
+                                        <button id="next-transformation-calculation" type="button"
+                                            class="btn btn-primary float-end">Next</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div id="transformation-calculation"
+                                    class="card text-bg-primary mb-3 disabled-card yellow-card">
+                                    <div class="card-header">Transformation Calculation</div>
+                                    <div class="card-body">
+                                        <div class="pb-3">
+                                            Select Estimation Techniques:
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio"
+                                                    name="estimation-techniques-radio" id="RANSAC-radio"
+                                                    value="RANSAC-radio" />
+                                                <label class="form-check-label" for="RANSAC-radio">
+                                                    RANSAC (Random Sample Consensus)
+                                                </label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio"
+                                                    name="estimation-techniques-radio" id="least-median-squares-radio"
+                                                    value="least-median-squares-radio" checked />
+                                                <label class="form-check-label" for="least-median-squares-radio">
+                                                    Least Median Squares
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="pb-3">
+                                            Model Selection:
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio"
+                                                    name="model-selection-radio" id="affine-radio" value="affine-radio"
+                                                    checked />
+                                                <label class="form-check-label" for="affine-radio">
+                                                    Affine
+                                                </label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio"
+                                                    name="model-selection-radio" id="projective-radio"
+                                                    value="projective-radio" />
+                                                <label class="form-check-label" for="projective-radio">
+                                                    Projective (or Homography)
+                                                </label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio"
+                                                    name="model-selection-radio" id="rigid-radio" value="rigid-radio" />
+                                                <label class="form-check-label" for="rigid-radio">
+                                                    Rigid
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <button id="prev-image-matching" type="button"
+                                            class="btn btn-primary">Back</button>
+                                        <button id="next-image-alignment" type="button"
+                                            class="btn btn-primary float-end">Next</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div id="image-alignment" class="card text-bg-primary mb-3 disabled-card yellow-card">
+                                    <div class="card-header">Image Alignment</div>
+                                    <div class="card-body">
+                                        <div class="pb-3">
+                                            Interpolation:
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="interpolation-radio"
+                                                    id="bilinear-interpolation-radio" value="Bilinear Interpolation" />
+                                                <label class="form-check-label" for="bilinear-interpolation-radio">
+                                                    Bilinear Interpolation
+                                                </label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="interpolation-radio"
+                                                    id="bicubic-interpolation-radio" value="Bicubic Interpolation"
+                                                    checked />
+                                                <label class="form-check-label" for="bicubic-interpolation-radio">
+                                                    Bicubic Interpolation
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <button id="prev-transformation-calculation" type="button"
+                                            class="btn btn-primary">Back</button>
+                                        <button id="end-registration-alignment" type="button"
+                                            class="btn btn-primary float-end" onclick="doneAction()">Done</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    <footer class="py-4 bg-light mt-auto">
+        <div class="container-fluid px-4">
+            <div class="d-flex align-items-center justify-content-between small">
+                <div class="text-muted">Copyright &copy; AshleyChewKaiWenn ChongKahJie LeeKhoonHong OngKuanLin 2023
+                </div>
+            </div>
+        </div>
+    </footer>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function updateOutput(sliderId, value) {
+        const splitArray = sliderId.split('_');
+        const outputId = splitArray[0] + '_' + splitArray[1] + '_output';
+        const outputElement = document.getElementById(outputId);
+        if (outputElement) {
+            outputElement.textContent = value;
+        }
+    }
+
+    $(document).ready(function () {
+        $("#next-image-matching").click(function () {
+            $("#image-matching").removeClass("disabled-card");
+            $("#feature-detection").addClass("disabled-card");
+        });
+        $("#next-transformation-calculation").click(function () {
+            $("#image-matching").addClass("disabled-card");
+            $("#transformation-calculation").removeClass("disabled-card");
+        });
+        $("#next-image-alignment").click(function () {
+            $("#transformation-calculation").addClass("disabled-card");
+            $("#image-alignment").removeClass("disabled-card");
+        });
+        $("#prev-feature-detection").click(function () {
+            $("#image-matching").addClass("disabled-card");
+            $("#feature-detection").removeClass("disabled-card");
+        });
+        $("#prev-image-matching").click(function () {
+            $("#transformation-calculation").addClass("disabled-card");
+            $("#image-matching").removeClass("disabled-card");
+        });
+        $("#prev-transformation-calculation").click(function () {
+            $("#image-alignment").addClass("disabled-card");
+            $("#transformation-calculation").removeClass("disabled-card");
+        });
+    });
+
+    document.addEventListener("DOMContentLoaded", function () {
+        let timeoutId = null;
+        function gatherData() {
+            let formData = new FormData();
+
+            // For all range inputs
+            let rangeInputs = document.querySelectorAll('input[type="range"]');
+            rangeInputs.forEach((input) => {
+                formData.append(input.id, input.value);
+            });
+
+            // For all checkboxes
+            let checkboxes = document.querySelectorAll('input[type="checkbox"]');
+            checkboxes.forEach((checkbox) => {
+                formData.append(checkbox.id, checkbox.checked ? "on" : "off");
+            });
+
+            // For all radios
+            let radioGroups = {}; // Object to store the selected radio value for each group
+
+            let radios = document.querySelectorAll('input[type="radio"]');
+            radios.forEach((radio) => {
+                // Check if this radio button belongs to a group
+                if (radio.name) {
+                    // If a radio with the same name is already checked, skip it
+                    if (radio.checked && !radioGroups.hasOwnProperty(radio.name)) {
+                        radioGroups[radio.name] = radio.value;
+                    }
+                }
+            });
+
+            // Append the selected radio values to the formData
+            for (let groupName in radioGroups) {
+                formData.append(groupName, radioGroups[groupName]);
+            }
+
+            // get the image
+            let image = document.getElementById("image_reference");
+            formData.append("image_reference", image_reference.src);
+
+            // get the image
+            let image_random = document.getElementById("image_random");
+            formData.append("image_random", image_random.src);
+
+            return formData;
+        }
+
+        // Function to perform the actual POST request
+        function performPostData() {
+            fetch("/imageReg_featureDetect/", {
+                method: "POST",
+                body: gatherData(),
+                headers: {
+                    "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]")
+                        .value,
+                },
+            })
+                .then((response) => response.json())
+                .then((data) => {
+                    console.log(data);
+                    // Update the image
+                    let image_reference = document.getElementById("image_reference");
+                    let image_random = document.getElementById("image_random");
+                    let splitArray_reference = image_reference.src.split("/");
+                    let splitArray_random = image_random.src.split("/");
+                    splitArray_reference[splitArray_reference.length - 1] = data.image_url_reference;
+                    splitArray_random[splitArray_random.length - 1] = data.image_url_random;
+                    console.log(data.image_url)
+                    image_reference.src = splitArray_reference.join("/");
+                    image_random.src = splitArray_random.join("/");
+                    console.log(image.src);
+                    // refresh the img
+
+                })
+                .catch((error) => {
+                    console.error("Error:", error);
+                });
+        }
+
+        // Debounced postData function
+        function postData() {
+            // Clear any existing timeout
+            if (timeoutId !== null) {
+                clearTimeout(timeoutId);
+            }
+
+            // Set a new timeout to delay the execution of performPostData by 500 milliseconds (1 second)
+            timeoutId = setTimeout(performPostData, 500);
+        }
+
+        // Add event listeners to all the range and checkbox inputs
+        let rangeInputs = document.querySelectorAll('input[type="range"]');
+        rangeInputs.forEach((input) => {
+            input.addEventListener("input", postData);
+        });
+
+        let checkboxes = document.querySelectorAll('input[type="checkbox"]');
+        checkboxes.forEach((checkbox) => {
+            checkbox.addEventListener("change", postData);
+        });
+
+        let radios = document.querySelectorAll('input[type="radio"]');
+        radios.forEach((radio) => {
+            radio.addEventListener("change", postData);
+        });
+
+        $('#end-registration-alignment').click(function () {
+            fetch("/imageRegAndAlign/", {
+                method: "POST",
+                body: gatherData(),
+                headers: {
+                    "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]")
+                        .value,
+                },
+            })
+                .then((response) => response.json())
+                .then((data) => {
+                    console.log(data);
+                    // Update the image
+                    let image_reference = document.getElementById("image_reference");
+                    let image_random = document.getElementById("image_random");
+                    let splitArray_reference = image_reference.src.split("/");
+                    let splitArray_random = image_random.src.split("/");
+                    splitArray_reference[splitArray_reference.length - 1] = data.reference_image_url;
+                    splitArray_random[splitArray_random.length - 1] = data.align_image_url;
+                    image_reference.src = splitArray_reference.join("/");
+                    image_random.src = splitArray_random.join("/");
+                })
+                .catch((error) => {
+                    console.error("Error:", error);
+                });
+        });
+    });
+
+    function doneAction() {
+        alert("Your action was completed successfully! Please proceed to Morphological Methods.");
+        window.location.href = "/";  // This redirects to the homepage
+    }
+
+</script>
+
+{% endblock %}

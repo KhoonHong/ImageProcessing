@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div id="layoutSidenav_content">
+    <main>
+        <div class="container-fluid px-4">
+
+        </div>
+    </main>
+    <footer class="py-4 bg-light mt-auto">
+        <div class="container-fluid px-4">
+            <div class="d-flex align-items-center justify-content-between small">
+                <div class="text-muted">Copyright &copy; AshleyChewKaiWenn ChongKahJie LeeKhoonHong OngKuanLin 2023
+                </div>
+            </div>
+        </div>
+    </footer>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+
+    document.addEventListener("DOMContentLoaded", function () {
+        document.getElementById('uploadBtn').addEventListener('click', function () {
+            document.getElementById('hiddenFileInput').click();
+        });
+
+        document.getElementById('hiddenFileInput').addEventListener('change', function () {
+            if (this.value) {
+                document.getElementById('uploadForm').submit();
+            }
+        });
+
+        // Select All Images
+        document.getElementById('selectAll').addEventListener('click', function () {
+            let checkboxes = document.querySelectorAll('.image-checkbox');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = true;
+                checkbox.classList.replace("hide", "show");
+            });
+        });
+
+        // Deselect All Images
+        document.getElementById('deselectAll').addEventListener('click', function () {
+            let checkboxes = document.querySelectorAll('.image-checkbox');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = false;
+                checkbox.classList.replace("show", "hide");
+            });
+
+        });
+
+        // Function to label images as 'normal'
+        function labelAsNormal() {
+            let selectedCheckboxes = document.querySelectorAll('.form-check-input.image-checkbox:checked');
+            selectedCheckboxes.forEach(function (checkbox) {
+                let imageContainer = checkbox.closest('.image-container');
+                let labelDiv = imageContainer.querySelector('.label');
+                labelDiv.textContent = 'normal';
+            });
+        }
+
+        // Function to label images as 'abnormal'
+        function labelAsAbnormal() {
+            let selectedCheckboxes = document.querySelectorAll('.form-check-input.image-checkbox:checked');
+            selectedCheckboxes.forEach(function (checkbox) {
+                let imageContainer = checkbox.closest('.image-container');
+                let labelDiv = imageContainer.querySelector('.label');
+                labelDiv.textContent = 'abnormal';
+            });
+        }
+
+        // Function to label images as 'null'
+        function labelAsNull() {
+            let selectedCheckboxes = document.querySelectorAll('.form-check-input.image-checkbox:checked');
+            selectedCheckboxes.forEach(function (checkbox) {
+                let imageContainer = checkbox.closest('.image-container');
+                let labelDiv = imageContainer.querySelector('.label');
+                labelDiv.textContent = 'NULL';
+            });
+        }
+
+        // Attach event listeners to the buttons
+        document.getElementById('labelNormal').addEventListener('click', labelAsNormal);
+        document.getElementById('labelAbnormal').addEventListener('click', labelAsAbnormal);
+        document.getElementById('labelNull').addEventListener('click', labelAsNull);
+
+    });
+
+    // Delete Selected Images
+    document.getElementById('deleteSelected').addEventListener('click', function () {
+        let selectedImages = document.querySelectorAll('.image-checkbox:checked');
+        let imageIds = [];
+        selectedImages.forEach(checkbox => {
+            imageIds.push(checkbox.value);
+        });
+        if (!imageIds.length) {
+            alert('No images selected.');
+            return;
+        }
+        fetch('/delete/', {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: new URLSearchParams({
+                'image_ids': imageIds.join(",")
+            })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                }
+            });
+    });
+
+    var checkboxes = document.getElementsByClassName("image-checkbox");
+
+    for (var i = 0; i < checkboxes.length; i++) {
+        checkboxes[i].addEventListener("click", function () {
+            this.classList.toggle("show", this.checked);
+            this.classList.toggle("hide", !this.checked);
+        });
+    }
+
+</script>
+{% endblock %}

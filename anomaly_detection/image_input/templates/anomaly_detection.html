@@ -1,0 +1,214 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div id="layoutSidenav_content">
+    <main>
+        <div class="container-fluid px-4">
+            <h1 class="mt-4">Anomaly Detection</h1>
+            <ol class="breadcrumb mb-4">
+                <li class="breadcrumb-item active">Thresholding, Connected Component Analysis and Shape Analysis</li>
+            </ol>
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-table me-1"></i>
+                    Configure the Settings
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-4">
+                            <div id="detection-methods" class="card text-bg-primary mb-3 red-card">
+                                <div class="card-header">Methods</div>
+                                <div class="card-body">
+                                    <div class="pb-3">
+                                        Select Detection Method:
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="detection-radio"
+                                                id="thresholding-radio" value="thresholding" checked>
+                                            <label class="form-check-label" for="thresholding-radio">
+                                                Thresholding
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="detection-radio"
+                                                id="connected-component-radio" value="connected-component">
+                                            <label class="form-check-label" for="connected-component-radio">
+                                                Connected Component Analysis
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="detection-radio"
+                                                id="shape-analysis-radio" value="shape-analysis">
+                                            <label class="form-check-label" for="shape-analysis-radio">
+                                                Shape Analysis
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <button id="next-thresholding-settings" type="button"
+                                        class="btn btn-primary float-end">Next</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <img id="image" src="{{ image.image.url }}" height="500px" width="500px" alt="Main Image"
+                                class="img-fluid">
+                        </div>
+                        <div class="col-4">
+                            <div id="thresholding-settings" class="card text-bg-primary mb-3 disabled-card red-card">
+                                <div class="card-header">Thresholding Settings</div>
+                                <div class="card-body">
+                                    <label for="threshold-value" class="form-label">Threshold Value: </label>
+                                    <output id="threshold-output">127</output>
+                                    <input type="range" class="form-range" id="threshold-value" min="0" max="255"
+                                        oninput="updateOutput(this.id, this.value)" aria-label="Custom range" />
+
+                                    <button id="prev-detection-methods" type="button"
+                                        class="btn btn-primary">Back</button>
+                                    <button id="end-anomaly-detection" type="button"
+                                        class="btn btn-primary float-end" onclick="doneAction()">Done</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    <footer class="py-4 bg-light mt-auto">
+        <div class="container-fluid px-4">
+            <div class="d-flex align-items-center justify-content-between small">
+                <div class="text-muted">Copyright &copy; AshleyChewKaiWenn ChongKahJie LeeKhoonHong OngKuanLin 2023
+                </div>
+            </div>
+        </div>
+    </footer>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+
+    document.addEventListener("DOMContentLoaded", function () {
+        let timeoutId = null;
+        function gatherData() {
+            let formData = new FormData();
+
+            // For all range inputs
+            let rangeInputs = document.querySelectorAll('input[type="range"]');
+            rangeInputs.forEach((input) => {
+                formData.append(input.id, input.value);
+            });
+
+            // For all checkboxes
+            let checkboxes = document.querySelectorAll('input[type="checkbox"]');
+            checkboxes.forEach((checkbox) => {
+                formData.append(checkbox.id, checkbox.checked ? "on" : "off");
+            });
+
+            // For all radios
+            let radioGroups = {}; // Object to store the selected radio value for each group
+
+            let radios = document.querySelectorAll('input[type="radio"]');
+            radios.forEach((radio) => {
+                // Check if this radio button belongs to a group
+                if (radio.name) {
+                    // If a radio with the same name is already checked, skip it
+                    if (radio.checked && !radioGroups.hasOwnProperty(radio.name)) {
+                        radioGroups[radio.name] = radio.value;
+                    }
+                }
+            });
+
+            // Append the selected radio values to the formData
+            for (let groupName in radioGroups) {
+                formData.append(groupName, radioGroups[groupName]);
+            }
+
+            // get the image
+            let image = document.getElementById("image");
+            formData.append("image", image.src);
+
+            return formData;
+        }
+
+        // Function to perform the actual POST request
+        function performPostData() {
+            fetch("/morphological_methods_demo/", {
+                method: "POST",
+                body: gatherData(),
+                headers: {
+                    "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]")
+                        .value,
+                },
+            })
+                .then((response) => response.json())
+                .then((data) => {
+                    console.log(data);
+                    // Update the image
+                    let image = document.getElementById("image");
+                    let splitArray = image.src.split("/");
+                    splitArray[splitArray.length - 1] = data.image_url;
+                    image.src = splitArray.join("/");
+                    console.log(image.src);
+
+                })
+                .catch((error) => {
+                    console.error("Error:", error);
+                });
+        }
+
+        // Debounced postData function
+        function postData() {
+            // Clear any existing timeout
+            if (timeoutId !== null) {
+                clearTimeout(timeoutId);
+            }
+
+            // Set a new timeout to delay the execution of performPostData by 500 milliseconds (1 second)
+            timeoutId = setTimeout(performPostData, 500);
+        }
+
+        // Add event listeners to all the range and checkbox inputs
+        let rangeInputs = document.querySelectorAll('input[type="range"]');
+        rangeInputs.forEach((input) => {
+            input.addEventListener("input", postData);
+        });
+
+        let checkboxes = document.querySelectorAll('input[type="checkbox"]');
+        checkboxes.forEach((checkbox) => {
+            checkbox.addEventListener("change", postData);
+        });
+
+        let radios = document.querySelectorAll('input[type="radio"]');
+        radios.forEach((radio) => {
+            radio.addEventListener("change", postData);
+        });
+    });
+
+    
+    var checkboxes = document.getElementsByClassName("image-checkbox");
+
+    for (var i = 0; i < checkboxes.length; i++) {
+        checkboxes[i].addEventListener("click", function () {
+            this.classList.toggle("show", this.checked);
+            this.classList.toggle("hide", !this.checked);
+        });
+    }
+
+    $(document).ready(function () {
+        $("#next-thresholding-settings").click(function () {
+            $("#detection-methods").addClass("disabled-card");
+            $("#thresholding-settings").removeClass("disabled-card");
+        });
+
+        $("#prev-detection-methods").click(function () {
+            $("#thresholding-settings").addClass("disabled-card");
+            $("#detection-methods").removeClass("disabled-card");
+        });
+    });
+
+    function doneAction() {
+        alert("Your action was completed successfully! Please proceed to Visualizations.");
+        window.location.href = "/";  // This redirects to the homepage
+    }
+</script>
+{% endblock %}

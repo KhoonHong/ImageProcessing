@@ -1,0 +1,240 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div id="layoutSidenav_content">
+    <main>
+        <div class="container-fluid px-4">
+            <h1 class="mt-4">Dashboard</h1>
+            <ol class="breadcrumb mb-4">
+                <li class="breadcrumb-item active">Dashboard</li>
+            </ol>
+            <div class="row">
+                <div class="col-xl-3 col-md-6">
+                    <div class="card bg-primary text-white mb-4">
+                        <div class="card-body">Image Input</div>
+                        <div class="card-footer d-flex align-items-center justify-content-between">
+                            <a class="small text-white stretched-link" href="{% url 'upload_view' %}">View Details</a>
+                            <div class="small text-white"><i class="fas fa-angle-right"></i></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-3 col-md-6">
+                    <div class="card bg-warning text-white mb-4">
+                        <div class="card-body">Image Registration or Alignment</div>
+                        <div class="card-footer d-flex align-items-center justify-content-between">
+                            <a class="small text-white stretched-link" href="{% url 'image_reg' %}">View Details</a>
+                            <div class="small text-white"><i class="fas fa-angle-right"></i></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-3 col-md-6">
+                    <div class="card bg-success text-white mb-4">
+                        <div class="card-body">Morphological Methods</div>
+                        <div class="card-footer d-flex align-items-center justify-content-between">
+                            <a class="small text-white stretched-link" href="{% url 'morphological_methods' %}">View
+                                Details</a>
+                            <div class="small text-white"><i class="fas fa-angle-right"></i></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-3 col-md-6">
+                    <div class="card bg-danger text-white mb-4">
+                        <div class="card-body">Anomaly Detection</div>
+                        <div class="card-footer d-flex align-items-center justify-content-between">
+                            <a class="small text-white stretched-link" href="{% url 'anomaly_detection' %}">View
+                                Details</a>
+                            <div class="small text-white"><i class="fas fa-angle-right"></i></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <hr>
+            <ol class="breadcrumb mb-4">
+                <li class="breadcrumb-item active">Browse</li>
+            </ol>
+            <div class="row">
+                <div class="col">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <!-- This creates a flexbox container -->
+
+                        <!-- Upload button on the left side -->
+                        <form method="post" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            {{ form.as_p }}
+                            <button type="submit" class="btn btn-primary">Upload</button>
+                        </form>
+
+                        <!-- Other buttons on the right side -->
+                        <div>
+                            <button id="selectAll" class="btn btn-primary" type="button">Select All</button>
+                            <button id="deselectAll" class="btn btn-primary" type="button">Deselect All</button>
+                            <button id="deleteSelected" class="btn btn-primary" type="button">Delete</button>
+                            <button id="labelNormal" class="btn btn-primary" type="button">Label as Normal</button>
+                            <button id="labelAbnormal" class="btn btn-primary" type="button">Label as
+                                Abnormal</button>
+                            <button id="labelNull" class="btn btn-primary" type="button">Clear Label</button>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+            <div class="row"> <!-- Bootstrap row -->
+                {% for image in images %}
+                <div class="col-2 col-md-1.5">
+                    <!-- This ensures 8 images per row on medium devices and larger -->
+                    <a class="container-link" href="{{ image.image.url }}">
+                        <div class="image-container">
+                            <img src="{{ image.image.url }}" alt="Main Image" class="img-fluid">
+                            <div class="label">{{ image.image_label }}</div>
+                            <div class="form-check">
+                                <input class="form-check-input image-checkbox hide" type="checkbox"
+                                    value="{{ image.id }}" id="checkbox_{{ forloop.counter }}">
+                            </div>
+                        </div>
+                        <p class="caption" title={{ image.image.url }}>
+                            {{ image.image.url }}
+                        </p>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+            <input type="hidden" id="imageRegUrl" value="{% url 'image_reg' %}">
+        </div>
+    </main>
+    <footer class="py-4 bg-light mt-auto">
+        <div class="container-fluid px-4">
+            <div class="d-flex align-items-center justify-content-between small">
+                <div class="text-muted">Copyright &copy; AshleyChewKaiWenn ChongKahJie LeeKhoonHong OngKuanLin 2023
+                </div>
+            </div>
+        </div>
+    </footer>
+</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+
+    document.addEventListener('DOMContentLoaded', function () {
+
+        // Check for stored Swal flag and display if set
+        if (localStorage.getItem('showSuccessSwal') === 'true') {
+            Swal.fire({
+                icon: 'success',
+                title: localStorage.getItem('successMessage'),
+                timer: 3000,
+                width: 600,
+                padding: '3em',
+                backdrop: `
+                    rgba(0,0,123,0.4)
+                    url("/static/images/kurukuru.gif")
+                    left top
+                    no-repeat
+                `
+            });
+            localStorage.removeItem('showSuccessSwal');
+            localStorage.removeItem('successMessage');
+        }
+
+        function toggleCheckboxClasses(checkbox) {
+            checkbox.classList.toggle("show", checkbox.checked);
+            checkbox.classList.toggle("hide", !checkbox.checked);
+        }
+
+        function updateLabelOnServer(imageIds, label) {
+            fetch('/update_label/', {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: new URLSearchParams({
+                    'image_ids': imageIds.join(","),
+                    'label': label
+                })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.success) {
+                        alert('Error updating label: ' + data.error);
+                    }
+                });
+        }
+
+        function labelImages(label) {
+            let selectedCheckboxes = document.querySelectorAll('.form-check-input.image-checkbox:checked');
+            let imageIds = [];
+            selectedCheckboxes.forEach(function (checkbox) {
+                let imageContainer = checkbox.closest('.image-container');
+                let labelDiv = imageContainer.querySelector('.label');
+                labelDiv.textContent = label;
+                imageIds.push(checkbox.value);
+            });
+            updateLabelOnServer(imageIds, label);
+        }
+
+        document.getElementById('selectAll').addEventListener('click', function () {
+            let checkboxes = document.querySelectorAll('.image-checkbox');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = true;
+                toggleCheckboxClasses(checkbox);
+            });
+        });
+
+        document.getElementById('deselectAll').addEventListener('click', function () {
+            let checkboxes = document.querySelectorAll('.image-checkbox');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = false;
+                toggleCheckboxClasses(checkbox);
+            });
+        });
+
+        document.getElementById('labelNormal').addEventListener('click', () => labelImages('normal'));
+        document.getElementById('labelAbnormal').addEventListener('click', () => labelImages('abnormal'));
+        document.getElementById('labelNull').addEventListener('click', () => labelImages('NULL'));
+
+        document.getElementById('deleteSelected').addEventListener('click', function () {
+            let selectedImages = document.querySelectorAll('.image-checkbox:checked');
+            let imageIds = [];
+            selectedImages.forEach(checkbox => imageIds.push(checkbox.value));
+
+            if (!imageIds.length) {
+                alert('No images selected.');
+                return;
+            }
+
+            fetch('/delete/', {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: new URLSearchParams({ 'image_ids': imageIds.join(",") })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        localStorage.setItem('showSuccessSwal', 'true');
+                        localStorage.setItem('successMessage', data.message);
+                        window.location.reload();
+                    } else {
+                        alert('Error deleting images: ' + data.error);
+                    }
+                });
+        });
+
+        // Checkbox individual toggling
+        let checkboxes = document.getElementsByClassName("image-checkbox");
+        Array.from(checkboxes).forEach(checkbox => {
+            checkbox.addEventListener("click", function () {
+                toggleCheckboxClasses(this);
+            });
+        });
+
+    });
+
+</script>
+{% endblock %}
