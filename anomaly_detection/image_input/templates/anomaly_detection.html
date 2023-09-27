@@ -1,12 +1,13 @@
 {% extends 'base.html' %}
 
-{% block content %}
+{% block content %}{% csrf_token %}
 <div id="layoutSidenav_content">
     <main>
         <div class="container-fluid px-4">
             <h1 class="mt-4">Anomaly Detection</h1>
             <ol class="breadcrumb mb-4">
-                <li class="breadcrumb-item active">Thresholding, Connected Component Analysis and Shape Analysis</li>
+                <li class="breadcrumb-item active">Adaptive Thresholding, Connected Component Analysis and Shape
+                    Analysis</li>
             </ol>
             <div class="card mb-4">
                 <div class="card-header">
@@ -25,7 +26,7 @@
                                             <input class="form-check-input" type="radio" name="detection-radio"
                                                 id="thresholding-radio" value="thresholding" checked>
                                             <label class="form-check-label" for="thresholding-radio">
-                                                Thresholding
+                                                Adaptive Thresholding
                                             </label>
                                         </div>
                                         <div class="form-check">
@@ -53,18 +54,45 @@
                                 class="img-fluid">
                         </div>
                         <div class="col-4">
-                            <div id="thresholding-settings" class="card text-bg-primary mb-3 disabled-card red-card">
-                                <div class="card-header">Thresholding Settings</div>
-                                <div class="card-body">
-                                    <label for="threshold-value" class="form-label">Threshold Value: </label>
-                                    <output id="threshold-output">127</output>
-                                    <input type="range" class="form-range" id="threshold-value" min="0" max="255"
-                                        oninput="updateOutput(this.id, this.value)" aria-label="Custom range" />
+                            <div class="row">
+                                <div id="thresholding-settings-1"
+                                    class="card text-bg-primary mb-3 disabled-card red-card">
+                                    <div class="card-header">Thresholding Settings</div>
+                                    <div id="threshold1-setting" class="card-body">
+                                        <label for="threshold-value" class="form-label">Threshold Value: </label>
+                                        <output id="threshold-output">5</output>
+                                        <input type="range" class="form-range" id="threshold-value" min="3" max="31"
+                                            step="2" oninput="updateOutput(this.id, this.value)"
+                                            aria-label="Custom range" />
 
-                                    <button id="prev-detection-methods" type="button"
-                                        class="btn btn-primary">Back</button>
-                                    <button id="end-anomaly-detection" type="button"
-                                        class="btn btn-primary float-end" onclick="doneAction()">Done</button>
+                                        <button id="prev-detection-methods" type="button"
+                                            class="btn btn-primary">Back</button>
+                                        <button id="end-anomaly-detection" type="button"
+                                            class="btn btn-primary float-end" onclick="doneAction()">Done</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div id="thresholding-settings-2"
+                                    class="card text-bg-primary mb-3 disabled-card red-card">
+                                    <div class="card-header">Thresholding Settings</div>
+                                    <div id="threshold2-setting" class="card-body">
+                                        <label for="blocksize-value" class="form-label">Block Size: </label>
+                                        <output id="blocksize-output">21</output>
+                                        <input type="range" class="form-range" id="blocksize-value" min="1" max="33"
+                                            step="2" oninput="updateOutput(this.id, this.value)"
+                                            aria-label="Custom range" />
+
+                                        <label for="c-value" class="form-label">C: </label>
+                                        <output id="c-output">0</output>
+                                        <input type="range" class="form-range" id="c-value" min="-40" max="40"
+                                            oninput="updateOutput(this.id, this.value)" aria-label="Custom range" />
+
+                                        <button id="prev-detection-methods" type="button"
+                                            class="btn btn-primary">Back</button>
+                                        <button id="end-anomaly-detection" type="button"
+                                            class="btn btn-primary float-end" onclick="doneAction()">Done</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -86,9 +114,60 @@
 
 {% block scripts %}
 <script>
+    function updateOutput(sliderId, value) {
+        const splitArray = sliderId.split('-');
+        const outputId = splitArray[0] + '-output';
+        const outputElement = document.getElementById(outputId);
+        if (outputElement) {
+            outputElement.textContent = value;
+        }
+    }
 
-    document.addEventListener("DOMContentLoaded", function () {
+    function attachRangeInputListeners() {
+        $('#threshold-setting').on('input', 'input[type="range"]', function () {
+            updateOutput(this.id, this.value);
+        });
+    }
+
+    var checkboxes = document.getElementsByClassName("image-checkbox");
+
+    for (var i = 0; i < checkboxes.length; i++) {
+        checkboxes[i].addEventListener("click", function () {
+            this.classList.toggle("show", this.checked);
+            this.classList.toggle("hide", !this.checked);
+        });
+    }
+
+    $(document).ready(function () {
+        $("#next-thresholding-settings").click(function () {
+            $("#detection-methods").addClass("disabled-card");
+            $("#thresholding-settings").removeClass("disabled-card");
+        });
+
+        $("#prev-detection-methods").click(function () {
+            $("#thresholding-settings").addClass("disabled-card");
+            $("#detection-methods").removeClass("disabled-card");
+        });
+
         let timeoutId = null;
+
+        $('#next-thresholding-settings').click(function () {
+            if ($('#thresholding-radio').prop('checked')) {
+                $("#thresholding-settings-1").removeClass("disabled-card");
+                $("#thresholding-settings-2").addClass("disabled-card");
+
+            } else {
+                $("#thresholding-settings-1").addClass("disabled-card");
+                $("#thresholding-settings-2").removeClass("disabled-card");;
+            }
+
+            $("#prev-detection-methods").off('click').click(function () {
+                $("#thresholding-settings").addClass("disabled-card");
+                $("#detection-methods").removeClass("disabled-card");
+            });
+        });
+
+
         function gatherData() {
             let formData = new FormData();
 
@@ -125,14 +204,19 @@
 
             // get the image
             let image = document.getElementById("image");
-            formData.append("image", image.src);
+
+            // store into local storage
+            if (localStorage.getItem("original_image") === null) {
+                localStorage.setItem("original_image", image.src);
+            }
+            formData.append("image", localStorage.getItem("original_image"));
 
             return formData;
         }
 
         // Function to perform the actual POST request
         function performPostData() {
-            fetch("/morphological_methods_demo/", {
+            fetch("/anomalyDetectionDemo/", {
                 method: "POST",
                 body: gatherData(),
                 headers: {
@@ -145,10 +229,44 @@
                     console.log(data);
                     // Update the image
                     let image = document.getElementById("image");
-                    let splitArray = image.src.split("/");
-                    splitArray[splitArray.length - 1] = data.image_url;
-                    image.src = splitArray.join("/");
+                    image.src = "http://127.0.0.1:8000/" + data.anomaly_image_url.replace("/anomaly_detection", "");
+                    console.log(data.anomaly_image_url.replace("/anomaly_detection", ""))
                     console.log(image.src);
+                    
+                    if (data.context.anomaly_detected === true) {
+                        var audio = new Audio('/static/audios/kurukuru.mp3');
+                    audio.play();
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Anomaly Detected!',
+                            timer: 1500,
+                            width: 600,
+                            padding: '3em',
+                            backdrop: `
+            rgba(0, 0, 123, 0.4)
+            url("/static/images/kurukuru.gif")     
+            center top
+            no-repeat
+                `
+                        });
+                    } else {
+                        var audio = new Audio('/static/audios/kurukuru.mp3');
+                    audio.play();
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'No Anomaly Detected!',
+                            text: 'No Anomaly Detected!',
+                            timer: 1500,
+                            width: 600,
+                            padding: '3em',
+                            backdrop: `
+            rgba(0, 0, 123, 0.4)
+            url("/static/images/kurukuru.gif")
+            center top
+            no-repeat
+                `
+                        });
+                    }
 
                 })
                 .catch((error) => {
@@ -182,32 +300,42 @@
         radios.forEach((radio) => {
             radio.addEventListener("change", postData);
         });
-    });
 
-    
-    var checkboxes = document.getElementsByClassName("image-checkbox");
-
-    for (var i = 0; i < checkboxes.length; i++) {
-        checkboxes[i].addEventListener("click", function () {
-            this.classList.toggle("show", this.checked);
-            this.classList.toggle("hide", !this.checked);
-        });
-    }
-
-    $(document).ready(function () {
-        $("#next-thresholding-settings").click(function () {
-            $("#detection-methods").addClass("disabled-card");
-            $("#thresholding-settings").removeClass("disabled-card");
-        });
-
-        $("#prev-detection-methods").click(function () {
-            $("#thresholding-settings").addClass("disabled-card");
-            $("#detection-methods").removeClass("disabled-card");
+        $('#end-anomaly-detection').click(function () {
+            fetch("/anomalyDetection/", {
+                method: "POST",
+                body: gatherData(),
+                headers: {
+                    "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]")
+                        .value,
+                },
+            })
+                .then((response) => response.json())
+                .then((data) => {
+                    console.log(data);
+                })
+                .catch((error) => {
+                    var audio = new Audio('/static/audios/kurukuru.mp3');
+                    audio.play();
+                    Swal.fire({
+                        icon: 'alert',
+                        title: "Error:", error,
+                        timer: 1500,
+                        width: 600,
+                        padding: '3em',
+                        backdrop: `
+            rgba(0, 0, 123, 0.4)
+            url("/static/images/kurukuru.gif")
+                    center top
+            no - repeat
+                `
+                    });
+                });
         });
     });
 
     function doneAction() {
-        alert("Your action was completed successfully! Please proceed to Visualizations.");
+        localStorage.setItem("showSuccessSwalAnomalyDetection", "true");
         window.location.href = "/";  // This redirects to the homepage
     }
 </script>

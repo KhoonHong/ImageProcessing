@@ -127,8 +127,8 @@
                                                 aria-label="Custom range" />
 
                                             <label for="ORB_WTAK_range" class="form-label">WTA_K: </label>
-                                            <output id="ORB_WTAK_output">2</output>
-                                            <input type="range" class="form-range" id="ORB_WTAK_range" min="1" max="3"
+                                            <output id="ORB_WTAK_output">3</output>
+                                            <input type="range" class="form-range" id="ORB_WTAK_range" min="2" max="4"
                                                 oninput="updateOutput(this.id, this.value)" aria-label="Custom range" />
 
                                             <label for="ORB_patchSize_range" class="form-label">patchSize: </label>
@@ -413,12 +413,8 @@
                     let splitArray_random = image_random.src.split("/");
                     splitArray_reference[splitArray_reference.length - 1] = data.image_url_reference;
                     splitArray_random[splitArray_random.length - 1] = data.image_url_random;
-                    console.log(data.image_url)
-                    image_reference.src = splitArray_reference.join("/");
-                    image_random.src = splitArray_random.join("/");
-                    console.log(image.src);
-                    // refresh the img
-
+                    image_reference.src = splitArray_reference.join("/")+ '?t=' + new Date().getTime();
+                    image_random.src = splitArray_random.join("/") + '?t=' + new Date().getTime();
                 })
                 .catch((error) => {
                     console.error("Error:", error);
@@ -475,13 +471,27 @@
                     image_random.src = splitArray_random.join("/");
                 })
                 .catch((error) => {
-                    console.error("Error:", error);
+                    var audio = new Audio('/static/audios/kurukuru.mp3');
+                    audio.play();
+                    Swal.fire({
+                        icon: 'alert',
+                        title: "Error:", error,
+                        timer: 1500,
+                        width: 600,
+                        padding: '3em',
+                        backdrop: `
+                    rgba(0,0,123,0.4)
+                    url("/static/images/kurukuru.gif")
+                    center top
+                    no-repeat
+                `
+                    });
                 });
         });
     });
 
     function doneAction() {
-        alert("Your action was completed successfully! Please proceed to Morphological Methods.");
+        localStorage.setItem("showSuccessSwalImageRegistration", "true");
         window.location.href = "/";  // This redirects to the homepage
     }
 

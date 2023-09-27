@@ -166,7 +166,7 @@
 
             // get the image
             let image = document.getElementById("image");
-            formData.append("image", image.src);
+            formData.append("image", image.src.split("?")[0]);
 
             return formData;
         }
@@ -187,7 +187,7 @@
                     // Update the image
                     let image = document.getElementById("image");
                     let splitArray = image.src.split("/");
-                    splitArray[splitArray.length - 1] = data.image_url;
+                    splitArray[splitArray.length - 1] = data.image_url + "?" + new Date().getTime();
                     image.src = splitArray.join("/");
                     console.log(image.src);
 
@@ -223,6 +223,48 @@
         radios.forEach((radio) => {
             radio.addEventListener("change", postData);
         });
+
+
+        $('#end-morphological-methods').click(function () {
+            fetch("/morphMethodsApplyAll/", {
+                method: "POST",
+                body: gatherData(),
+                headers: {
+                    "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]")
+                        .value,
+                },
+            })
+                .then((response) => response.json())
+                .then((data) => {
+                    console.log(data);
+                    // Update the image
+                    // let image_reference = document.getElementById("image_reference");
+                    // let image_random = document.getElementById("image_random");
+                    // let splitArray_reference = image_reference.src.split("/");
+                    // let splitArray_random = image_random.src.split("/");
+                    // splitArray_reference[splitArray_reference.length - 1] = data.reference_image_url;
+                    // splitArray_random[splitArray_random.length - 1] = data.align_image_url;
+                    // image_reference.src = splitArray_reference.join("/");
+                    // image_random.src = splitArray_random.join("/");
+                })
+                .catch((error) => {
+                    var audio = new Audio('/static/audios/kurukuru.mp3');
+                    audio.play();
+                    Swal.fire({
+                        icon: 'alert',
+                        title: "Error:", error,
+                        timer: 1500,
+                        width: 600,
+                        padding: '3em',
+                        backdrop: `
+                    rgba(0,0,123,0.4)
+                    url("/static/images/kurukuru.gif")
+                    center top
+                    no-repeat
+                `
+                    });
+                });
+        });
     });
 
     
@@ -255,7 +297,7 @@
     });
 
     function doneAction() {
-        alert("Your action was completed successfully! Please proceed to Anomaly Detection.");
+        localStorage.setItem("showSuccessSwalMorphologicalMethods", "true");
         window.location.href = "/";  // This redirects to the homepage
     }
 </script>

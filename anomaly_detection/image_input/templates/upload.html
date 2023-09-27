@@ -49,9 +49,9 @@
                 </div>
             </div>
             <hr>
-            <ol class="breadcrumb mb-4">
+            <!-- <ol class="breadcrumb mb-4">
                 <li class="breadcrumb-item active">Browse</li>
-            </ol>
+            </ol> -->
             <div class="row">
                 <div class="col">
                     <div class="d-flex justify-content-between align-items-center">
@@ -118,24 +118,58 @@
 
     document.addEventListener('DOMContentLoaded', function () {
 
-        // Check for stored Swal flag and display if set
-        if (localStorage.getItem('showSuccessSwal') === 'true') {
-            Swal.fire({
-                icon: 'success',
-                title: localStorage.getItem('successMessage'),
-                timer: 3000,
-                width: 600,
-                padding: '3em',
-                backdrop: `
-                    rgba(0,0,123,0.4)
-                    url("/static/images/kurukuru.gif")
-                    left top
-                    no-repeat
-                `
-            });
-            localStorage.removeItem('showSuccessSwal');
-            localStorage.removeItem('successMessage');
+        const swalConfigs = [
+            {
+                key: 'showSuccessSwal',
+                audioSrc: '/static/audios/kurukuru.mp3',
+                backdropImg: '/static/images/kurukuru.gif',
+                title: () => localStorage.getItem('successMessage')
+            },
+            {
+                key: 'showSuccessSwalAnomalyDetection',
+                audioSrc: '/static/audios/yowai.mp3',
+                backdropImg: '/static/images/yowai.gif',
+                title: () => "Your action was completed successfully! Please proceed to Visualizations."
+            },
+            {
+                key: 'showSuccessSwalImageRegistration',
+                audioSrc: '/static/audios/yowai.mp3',
+                backdropImg: '/static/images/yowai.gif',
+                title: () => "Your action was completed successfully! Please proceed to Morphological Methods."
+            },
+            {
+                key: 'showSuccessSwalMorphologicalMethods',
+                audioSrc: '/static/audios/yowai.mp3',
+                backdropImg: '/static/images/yowai.gif',
+                title: () => "Your action was completed successfully! Please proceed to Anomaly Detection."
+            }
+        ];
+
+        for (const config of swalConfigs) {
+            if (localStorage.getItem(config.key) === 'true') {
+                const audio = new Audio(config.audioSrc);
+                audio.play();
+
+                Swal.fire({
+                    icon: 'success',
+                    title: config.title(),
+                    timer: 1500,
+                    width: 600,
+                    padding: '3em',
+                    timerProgressBar: true,
+                    backdrop: `
+                rgba(0,0,123,0.4)
+                url("${config.backdropImg}")
+                center top
+                no-repeat
+            `
+                });
+
+                localStorage.removeItem(config.key);
+                break; // Exit the loop once we've found a match and displayed the alert
+            }
         }
+
 
         function toggleCheckboxClasses(checkbox) {
             checkbox.classList.toggle("show", checkbox.checked);
@@ -158,7 +192,21 @@
                 .then(response => response.json())
                 .then(data => {
                     if (!data.success) {
-                        alert('Error updating label: ' + data.error);
+                        var audio = new Audio('/static/audios/kurukuru.mp3');
+                        audio.play();
+                        Swal.fire({
+                            icon: 'alert',
+                            title: 'Error updating label: ' + data.error,
+                            timer: 1500,
+                            width: 600,
+                            padding: '3em',
+                            backdrop: `
+                    rgba(0,0,123,0.4)
+                    url("/static/images/kurukuru.gif")
+                    center top
+                    no-repeat
+                `
+                        });
                     }
                 });
         }
@@ -201,7 +249,22 @@
             selectedImages.forEach(checkbox => imageIds.push(checkbox.value));
 
             if (!imageIds.length) {
-                alert('No images selected.');
+                var audio = new Audio('/static/audios/kurukuru.mp3');
+                audio.play();
+                Swal.fire({
+                    icon: 'alert',
+                    title: 'No images selected.',
+                    timer: 1500,
+                    width: 600,
+                    padding: '3em',
+                    timerProgressBar: true,
+                    backdrop: `
+                    rgba(0,0,123,0.4)
+                    url("/static/images/kurukuru.gif")
+                    center top
+                    no-repeat
+                `
+                });
                 return;
             }
 
@@ -221,7 +284,22 @@
                         localStorage.setItem('successMessage', data.message);
                         window.location.reload();
                     } else {
-                        alert('Error deleting images: ' + data.error);
+                        var audio = new Audio('/static/audios/kurukuru.mp3');
+                        audio.play();
+                        Swal.fire({
+                            icon: 'alert',
+                            title: 'Error deleting images: ' + data.error,
+                            timer: 1500,
+                            width: 600,
+                            padding: '3em',
+                            timerProgressBar: true,
+                            backdrop: `
+                    rgba(0,0,123,0.4)
+                    url("/static/images/kurukuru.gif")
+                    center top
+                    no-repeat
+                `
+                        });
                     }
                 });
         });

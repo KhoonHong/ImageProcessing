@@ -13,6 +13,11 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.views import View
 import sweetify
+from sklearn.metrics import precision_score, recall_score, f1_score
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+from django.conf import settings
 
 original_image_path_random, original_image_path_reference = None, None
 SIFT_sample_keypoints, SIFT_sample_descriptors = None, None
@@ -102,11 +107,7 @@ def morph_demo(request):
 
     if not os.path.exists(image_url):
         return JsonResponse({'success': False, 'message': 'Image not found'})
-
-    # Handle image loading from URL if needed
-    # TODO: You might need to download the image to your local storage if you're dealing with URLs
-
-    # For now, assuming the image_url is a path to the local file
+    
     image_path = image_url
 
     # Convert to grayscale if switch is on
@@ -114,28 +115,35 @@ def morph_demo(request):
         image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
     else:
         image = cv2.imread(image_path, cv2.IMREAD_COLOR)
-
+    cv2.imwrite(image_path, image)
     if image is None:
         return JsonResponse({'success': False, 'message': 'Unable to load image'})
 
     # Apply filtering if selected
     filter_type = form_data.get('filtering-radio', 'none')
     image = apply_filter(image_path, filter_type)
+    cv2.imwrite(image_path, image)
 
     # Apply morphological operations
     if form_data.get('erosion_switch') == 'on':
         image = apply_erosion(image)
+        print("erosion applied")
+        cv2.imwrite(image_path, image)
 
     if form_data.get('dilation_switch') == 'on':
         image = apply_dilation(image)
+        print("dilation applied")
+        cv2.imwrite(image_path, image)
 
     if form_data.get('opening_switch') == 'on':
+        print("opening applied")
         image = morphological_operations(image_path, 'opening')
+        cv2.imwrite(image_path, image)
 
     if form_data.get('closing_switch') == 'on':
+        print("closing applied")
         image = morphological_operations(image_path, 'closing')
-
-    # TODO: Handle saving or displaying the processed image, if needed.
+        cv2.imwrite(image_path, image)
 
     return JsonResponse({
         'success': True, 
@@ -306,6 +314,74 @@ def feature_detect(request):
         'parameters': form_data
     })
 
+def morphMethodsApplyAll(request):
+    if request.method != "POST":
+        return JsonResponse({'success': False, 'message': 'Invalid method'})
+    form_data = request.POST
+
+    # get all the images
+    none_images = UploadedImage.objects.filter(image_label=None)
+    null_images = UploadedImage.objects.filter(image_label='NULL')
+
+    # Use the | operator to concatenate the QuerySets
+    combined_images = none_images | null_images
+
+    for image in combined_images:
+        if image is not None:
+            process_image(image, form_data)
+
+    return JsonResponse({'success': True, 'message': 'Image morphological applied to all successfully!'})
+
+
+def process_image(image, form_data):
+    image_path = os.path.join('media', image.image_name)
+    # Convert to grayscale if switch is on
+    if form_data.get('grayscale_switch') == 'on':
+        image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+    else:
+        image = cv2.imread(image_path, cv2.IMREAD_COLOR)
+
+    if image is None:
+        return JsonResponse({'success': False, 'message': 'Unable to load image'})
+
+    # Apply filtering if selected
+    filter_type = form_data.get('filtering-radio', 'none')
+    image = apply_filter(image_path, filter_type)
+
+    # Apply morphological operations
+    if form_data.get('erosion_switch') == 'on':
+        image = apply_erosion(image)
+
+    if form_data.get('dilation_switch') == 'on':
+        image = apply_dilation(image)
+
+    if form_data.get('opening_switch') == 'on':
+        image = morphological_operations(image_path, 'opening')
+
+    if form_data.get('closing_switch') == 'on':
+        image = morphological_operations(image_path, 'closing')
+
+    # Save the processed image
+    cv2.imwrite(image_path, image)
+
+def draw_matches_side_by_side(img1, keypoints1, img2, keypoints2, matches, mask):
+    """Draw matches between two images side by side."""
+    # Stack images side-by-side
+    h1, w1 = img1.shape[:2]
+    h2, w2 = img2.shape[:2]
+    output_img = np.zeros((max(h1, h2), w1 + w2), dtype=img1.dtype)
+    output_img[:h1, :w1] = img1
+    output_img[:h2, w1:] = img2
+
+    # Draw lines between matching keypoints
+    for i, m in enumerate(matches):
+        if mask[i]:
+            pt1 = tuple(map(int, keypoints1[m.queryIdx].pt))
+            pt2 = tuple(map(int, (keypoints2[m.trainIdx].pt[0] + w1, keypoints2[m.trainIdx].pt[1])))
+            color = (0, 255, 0)  # Green color
+            cv2.line(output_img, pt1, pt2, color, 1)
+
+    return output_img
 
 def image_reg_align(request):
     if request.method != "POST":
@@ -327,6 +403,8 @@ def image_reg_align(request):
     unique_filename = f"aligned_image_{uuid.uuid4().hex}.jpg"
     processed_image_path = os.path.join('media', 'uploaded_images', unique_filename)
     cv2.imwrite(processed_image_path, aligned_image)
+
+    
 
     apply_to_all(original_image_reference, M, form_data)
 
@@ -387,7 +465,7 @@ def combined_keypoints(image, form_data, use_orb=True, use_surf=True, use_sift=T
         keypoints.extend(sift_kp)
     
     # Draw the keypoints on the image
-    image_with_keypoints = cv2.drawKeypoints(image, keypoints, None, (0, 0, 255), flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+    image_with_keypoints = cv2.drawKeypoints(image, keypoints, None, flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
     
     return image_with_keypoints
 
@@ -464,6 +542,202 @@ def combined_matching(img1, img2, form_data, use_orb=True, use_surf=True, use_si
 
     return good_matches, keypoints1, keypoints2
 
+def anomalyDetection(request):
+    if request.method != "POST":
+        return JsonResponse({'success': False, 'message': 'Invalid method'})
+    form_data = request.POST
+
+    global original_image_path_reference
+    original_image_path_random = "/".join(form_data.get('image').split("/")[3:]) 
+
+    original_image_path_reference = (UploadedImage.objects.filter(image_label='normal').order_by('?').first()).image_url if original_image_path_reference == None else original_image_path_reference
+
+    # if first character is a slash, remove it
+    if original_image_path_reference[0] == '/':
+        original_image_path_reference = original_image_path_reference[1:]
+
+    #generate a unique filename using UUID
+    new_image_path = os.path.join('media', 'uploaded_images', f"anomaly_detection_{uuid.uuid4().hex}.jpg")
+    if form_data.get("detection-radio") == "thresholding":
+        adaptive_thresholding(original_image_path_random, new_image_path, block_size=form_data.get("blocksize-value"), C=form_data.get("c-value"))
+
+    elif form_data.get("detection-radio") == "connected-component":
+        new_image = connected_component(original_image_path_random, threshold_factor=form_data.get("threshold-value"))
+        cv2.imwrite(new_image_path, new_image)
+        image_url = visualize_results(new_image_path, original_image_path_reference)
+
+    elif form_data.get("detection-radio") == "shape-analysis":
+        anomaly_detected_result = shape_analysis(original_image_path_random, original_image_path_reference, threshold=form_data.get("threshold-value"))
+        anomaly_detected = bool(anomaly_detected_result)
+        # Visualize and get the result image path
+        image_url = visualize_results(original_image_path_random, original_image_path_reference)
+        print(anomaly_detected)
+        context = {
+            'anomaly_detected': anomaly_detected,
+            'visualization_image_url': image_url
+        }
+        return JsonResponse({'success': True, 'message': 'Image anomaly detected successfully!', 'anomaly_image_url': image_url, 'context': context})
+
+    return JsonResponse({'success': True, 'message': 'Image anomaly detected successfully!', 'anomaly_image_url': new_image_path})
+
+def get_contours(image_path):
+    image = cv2.imread(image_path)
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    _, thresh = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY)
+    contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    return contours
+
+def adaptive_thresholding(input_image_path, output_image_path, block_size=11, C=2):
+    """
+    Detect anomalies in an image using adaptive thresholding.
+    
+    Parameters:
+    - input_image_path: Path to the input image.
+    - output_image_path: Path to save the output image with anomalies highlighted.
+    - block_size: Size of a pixel neighborhood that is used to calculate a threshold value for the pixel (should be odd).
+    - C: Constant subtracted from the mean or weighted mean.
+    """
+    
+    # Read the input image
+    img = cv2.imread(input_image_path, cv2.IMREAD_GRAYSCALE)
+    
+    if img is None:
+        raise ValueError("Could not read the image.")
+    
+    # Convert block_size and C to integers
+    block_size = int(block_size)
+    C = int(C)
+
+    # Ensure block_size is an odd integer > 1
+    if block_size % 2 == 0:
+        block_size += 1
+
+    # Apply adaptive thresholding
+    thresh = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, block_size, C)
+
+    # Highlight anomalies on the original image
+    highlighted = cv2.merge((thresh, thresh, thresh))  # Convert binary mask to 3-channel image
+    anomaly_detected = cv2.bitwise_and(highlighted, cv2.merge((img, img, img)))
+
+    # Save the output image
+    cv2.imwrite(output_image_path, anomaly_detected)
+
+    return anomaly_detected
+
+
+def connected_component(image_path, threshold_factor=0.05):
+    # Load image in grayscale
+    print(image_path)
+    img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+
+    # Threshold the image
+    _, binary_img = cv2.threshold(img, 128, 255, cv2.THRESH_BINARY)
+
+    binary_img = binary_img.astype(np.uint8)
+
+
+    # Get connected components and stats
+    num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(binary_img, connectivity=8)
+
+    # Compute average area of components
+    avg_area = np.mean(stats[:, cv2.CC_STAT_AREA])
+
+    anomalies = []
+
+    # Identify components with area significantly different from the average
+    for i in range(1, num_labels): # skip the background label
+        if stats[i, cv2.CC_STAT_AREA] < float(threshold_factor) * avg_area or stats[i, cv2.CC_STAT_AREA] > (1 + float(threshold_factor)) * avg_area:
+            anomalies.append(i)
+
+    # Create an output image highlighting anomalies
+    output_img = np.zeros_like(img)
+    for i in anomalies:
+        output_img[labels == i] = 255
+
+    return output_img
+
+def visualize_results(input_img, reference_img):
+    """
+    Visualize the input and reference images with contours.
+    """
+    # Displaying input and reference images with contours
+    fig, axes = plt.subplots(1, 2, figsize=(12, 6))
+
+    print(type(original_image_path_random), original_image_path_random)
+    print(type(original_image_path_reference), original_image_path_reference)
+
+    input_contours = get_contours(input_img)
+    reference_contours = get_contours(reference_img)
+    input_img = cv2.imread(input_img)
+    reference_img = cv2.imread(reference_img)
+    
+    # Input image with contours
+    axes[0].imshow(input_img, cmap='gray')
+    for contour in input_contours:
+        axes[0].plot(contour[:, :, 0], contour[:, :, 1], 'r')
+    axes[0].set_title('Input Image with Contours')
+
+    # Reference image with contours
+    axes[1].imshow(reference_img, cmap='gray')
+    for contour in reference_contours:
+        axes[1].plot(contour[:, :, 0], contour[:, :, 1], 'r')
+    axes[1].set_title('Reference Image with Contours')
+    
+     # Save the plot to an image with uuid as filename
+    image_filename = f"shape_analysis_{uuid.uuid4().hex}.png"
+    image_path = os.path.join('media', 'visualizations', image_filename)
+    plt.savefig(image_path)
+
+    # Close the plt to release memory
+    plt.close()
+    return image_path
+
+def shape_analysis(input_image, reference_image, threshold=0.02):
+    """
+    Detect anomalies in input_image based on the shape analysis with reference_image.
+    
+    Parameters:
+    - input_image: Path to the input image.
+    - reference_image: Path to the reference image without anomalies.
+    - threshold: Difference threshold for anomaly detection.
+    
+    Returns:
+    - True if anomaly is detected, False otherwise.
+    """
+    print(input_image, reference_image, threshold)
+
+    # Helper function to get Hu Moments
+    def get_hu_moments(image):
+        if image is None:
+            raise ValueError(f"Failed to load image from path: {reference_image}")
+
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        _, thresh = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY)
+        contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+        # Check if there are any contours
+        if len(contours) == 0:
+            raise ValueError("No contours found in the image.")
+
+        # Compute average of Hu Moments for all contours
+        avg_hu_moments = np.zeros(7)
+        for contour in contours:
+            moments = cv2.moments(contour)
+            hu_moments = cv2.HuMoments(moments)
+            avg_hu_moments += hu_moments.ravel()
+        avg_hu_moments /= len(contours)
+
+        return avg_hu_moments
+
+    input_hu = get_hu_moments(cv2.imread(input_image))
+    reference_hu = get_hu_moments(cv2.imread(reference_image))
+
+    difference = np.linalg.norm(input_hu - reference_hu)
+
+    # Convert threshold to float
+    threshold_value = float(threshold)
+
+    return difference > threshold_value
 
 
 def compute_surf(image, hessianThreshold=100, nOctaves=4, nOctaveLayers=3, extended=True, upright=False):
