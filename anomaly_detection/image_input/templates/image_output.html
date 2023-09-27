@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div id="layoutSidenav_content">
+    <main>
+        <div class="container-fluid px-4">
+            <h1 class="mt-4">Image Output</h1>
+            <ol class="breadcrumb mb-4">
+                <li class="breadcrumb-item active">for Anomaly Detection</li>
+            </ol>
+            <div class="row">
+                <!-- Placeholder for Image Outputs -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <i class="fas fa-images me-1"></i>
+                        Image Outputs
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md">
+                                <h5>Original and Processed Image</h5>
+                                <div class="row"> <!-- Bootstrap row -->
+                                    {% for image in images %}
+                                    <div class="col-2">
+                                        <a class="container-link" href="/media/visualizations/{{ image }}">
+                                            <div class="image-container">
+                                                <img src="/media/visualizations/{{ image }}" alt="Main Image" class="img-fluid">
+                                            </div>
+                                            <p class="caption" title="/media/visualizations/{{ image }}">
+                                                /media/visualizations/{{ image }}
+                                            </p>
+                                        </a>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+    </main>
+    <footer class="py-4 bg-light mt-auto">
+        <div class="container-fluid px-4">
+            <div class="d-flex align-items-center justify-content-between small">
+                <div class="text-muted">Copyright &copy; AshleyChewKaiWenn ChongKahJie LeeKhoonHong OngKuanLin 2023
+                </div>
+            </div>
+        </div>
+    </footer>
+</div>
+{% endblock %}
+
+{% block scripts %}
+
+{% endblock %}

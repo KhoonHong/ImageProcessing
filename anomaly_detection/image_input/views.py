@@ -18,8 +18,8 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from django.conf import settings
+from glob import glob
 
-original_image_path_random, original_image_path_reference = None, None
 SIFT_sample_keypoints, SIFT_sample_descriptors = None, None
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -279,9 +279,8 @@ def feature_detect(request):
     form_data = request.POST
     image_url_reference = form_data.get('image_reference').split('/')[-1]
     image_url_random = form_data.get('image_random').split('/')[-1]
-    global original_image_path_reference, original_image_path_random
-    original_image_path_reference = os.path.join('media/uploaded_images', image_url_reference) if original_image_path_reference == None else original_image_path_reference
-    original_image_path_random = os.path.join('media/uploaded_images', image_url_random) if original_image_path_random == None else original_image_path_random
+    original_image_path_reference = os.path.join('media/uploaded_images', image_url_reference) 
+    original_image_path_random = os.path.join('media/uploaded_images', image_url_random) 
 
     if not os.path.exists(original_image_path_reference) or not os.path.exists(original_image_path_random):
         return JsonResponse({'success': False, 'message': 'Image not found'})
@@ -404,7 +403,13 @@ def image_reg_align(request):
     processed_image_path = os.path.join('media', 'uploaded_images', unique_filename)
     cv2.imwrite(processed_image_path, aligned_image)
 
-    
+    # Visualization
+    matched_img = draw_matches_side_by_side(original_image_reference, keypoints1, aligned_image, keypoints2, good_matches, mask)
+
+    # save the matched image
+    unique_filename_matched = f"matched_image_{uuid.uuid4().hex}.jpg"
+    matched_image_path = os.path.join('media', 'visualizations', unique_filename_matched)
+    cv2.imwrite(matched_image_path, matched_img)
 
     apply_to_all(original_image_reference, M, form_data)
 
@@ -952,3 +957,17 @@ def output(request):
     image = UploadedImage.objects.order_by('?').first()
     print(image.image)
     return render(request, 'output.html', {'image': image})
+
+def image_output(request):
+    # load all images from media/visualizations folder
+    images = list_all_images()
+    print(images)
+    return render(request, 'image_output.html', {'images': images})
+
+
+def list_all_images():
+    media_root = os.path.join(os.getcwd(), 'media', 'visualizations')  # Adjust path as necessary
+    jpg_images = glob(f"{media_root}/*.jpg")
+    png_images = glob(f"{media_root}/*.png")
+    all_images = jpg_images + png_images
+    return [os.path.basename(f) for f in all_images]

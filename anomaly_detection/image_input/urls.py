@@ -14,5 +14,6 @@ urlpatterns = [
     path('output/', views.output, name='output'),
     path('morphMethodsApplyAll/', views.morphMethodsApplyAll, name='morphMethodsApplyAll'),
     path('anomalyDetectionDemo/', views.anomalyDetection, name='anomalyDetection'),
+    path('image_output/', views.image_output, name='image_output'),
 ]
 

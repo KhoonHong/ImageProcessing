@@ -232,10 +232,10 @@
                     image.src = "http://127.0.0.1:8000/" + data.anomaly_image_url.replace("/anomaly_detection", "");
                     console.log(data.anomaly_image_url.replace("/anomaly_detection", ""))
                     console.log(image.src);
-                    
+
                     if (data.context.anomaly_detected === true) {
                         var audio = new Audio('/static/audios/kurukuru.mp3');
-                    audio.play();
+                        audio.play();
                         Swal.fire({
                             icon: 'warning',
                             title: 'Anomaly Detected!',
@@ -251,7 +251,7 @@
                         });
                     } else {
                         var audio = new Audio('/static/audios/kurukuru.mp3');
-                    audio.play();
+                        audio.play();
                         Swal.fire({
                             icon: 'success',
                             title: 'No Anomaly Detected!',
@@ -338,5 +338,10 @@
         localStorage.setItem("showSuccessSwalAnomalyDetection", "true");
         window.location.href = "/";  // This redirects to the homepage
     }
+
+    window.addEventListener('beforeunload', function () {
+        localStorage.removeItem('original_image');
+    });
+
 </script>
 {% endblock %}

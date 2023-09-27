@@ -384,11 +384,19 @@
 
             // get the image
             let image = document.getElementById("image_reference");
-            formData.append("image_reference", image_reference.src);
+             // store into local storage
+             if (localStorage.getItem("reference_image") === null) {
+                localStorage.setItem("reference_image", image.src);
+            }
+            formData.append("image_reference", localStorage.getItem("reference_image"));
 
             // get the image
             let image_random = document.getElementById("image_random");
-            formData.append("image_random", image_random.src);
+            // store into local storage
+            if (localStorage.getItem("random_image") === null) {
+                localStorage.setItem("random_image", image_random.src);
+            }
+            formData.append("image_random", localStorage.getItem("random_image"));
 
             return formData;
         }
@@ -494,7 +502,10 @@
         localStorage.setItem("showSuccessSwalImageRegistration", "true");
         window.location.href = "/";  // This redirects to the homepage
     }
-
+    window.addEventListener('beforeunload', function () {
+        localStorage.removeItem('random_image');
+        localStorage.removeItem('reference_image');
+    });
 </script>
 
 {% endblock %}
