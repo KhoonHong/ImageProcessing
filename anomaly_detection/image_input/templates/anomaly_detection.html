@@ -38,6 +38,13 @@
                                         </div>
                                         <div class="form-check">
                                             <input class="form-check-input" type="radio" name="detection-radio"
+                                                id="deep-learning-radio" value="deep-learning">
+                                            <label class="form-check-label" for="deep-learning-radio">
+                                                Convolutional AutoEncoder (CAE)
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="detection-radio"
                                                 id="shape-analysis-radio" value="shape-analysis">
                                             <label class="form-check-label" for="shape-analysis-radio">
                                                 Shape Analysis
@@ -155,8 +162,19 @@
             if ($('#thresholding-radio').prop('checked')) {
                 $("#thresholding-settings-1").removeClass("disabled-card");
                 $("#thresholding-settings-2").addClass("disabled-card");
-
-            } else {
+            }
+             else if ($('#deep-learning-radio').prop('checked')) {
+                alert
+                Swal.fire({
+                    title: 'Please Wait !',
+                    html: 'data uploading',// add html attribute if you want or remove
+                    allowOutsideClick: false,
+                    onBeforeOpen: () => {
+                        Swal.showLoading()
+                    },
+                });
+            }
+            else {
                 $("#thresholding-settings-1").addClass("disabled-card");
                 $("#thresholding-settings-2").removeClass("disabled-card");;
             }
@@ -228,45 +246,86 @@
                 .then((data) => {
                     console.log(data);
                     // Update the image
-                    let image = document.getElementById("image");
-                    image.src = "http://127.0.0.1:8000/" + data.anomaly_image_url.replace("/anomaly_detection", "");
-                    console.log(data.anomaly_image_url.replace("/anomaly_detection", ""))
-                    console.log(image.src);
-
-                    if (data.context.anomaly_detected === true) {
-                        var audio = new Audio('/static/audios/kurukuru.mp3');
-                        audio.play();
-                        Swal.fire({
-                            icon: 'warning',
-                            title: 'Anomaly Detected!',
-                            timer: 1500,
-                            width: 600,
-                            padding: '3em',
-                            backdrop: `
+                    if (data.type != 'deep-learning') {
+                        let image = document.getElementById("image");
+                        image.src = "http://127.0.0.1:8000/" + data.anomaly_image_url.replace("/anomaly_detection", "");
+                        console.log(data.anomaly_image_url.replace("/anomaly_detection", ""))
+                        console.log(image.src);
+                        if (data.context.anomaly_detected === true) {
+                            var audio = new Audio('/static/audios/kurukuru.mp3');
+                            audio.play();
+                            Swal.fire({
+                                icon: 'warning',
+                                title: 'Anomaly Detected!',
+                                timer: 1500,
+                                width: 600,
+                                padding: '3em',
+                                backdrop: `
             rgba(0, 0, 123, 0.4)
             url("/static/images/kurukuru.gif")     
             center top
             no-repeat
                 `
-                        });
-                    } else {
-                        var audio = new Audio('/static/audios/kurukuru.mp3');
-                        audio.play();
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'No Anomaly Detected!',
-                            text: 'No Anomaly Detected!',
-                            timer: 1500,
-                            width: 600,
-                            padding: '3em',
-                            backdrop: `
+                            });
+                        } else {
+                            var audio = new Audio('/static/audios/kurukuru.mp3');
+                            audio.play();
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'No Anomaly Detected!',
+                                text: 'No Anomaly Detected!',
+                                timer: 1500,
+                                width: 600,
+                                padding: '3em',
+                                backdrop: `
             rgba(0, 0, 123, 0.4)
             url("/static/images/kurukuru.gif")
             center top
             no-repeat
                 `
-                        });
+                            });
+                        }
                     }
+                    else {
+                        swal.close();
+                        if (data.label === "anomaly") {
+                            var audio = new Audio('/static/audios/kurukuru.mp3');
+                            audio.play();
+                            Swal.fire({
+                                icon: 'warning',
+                                title: 'Anomaly Detected!',
+                                timer: 1500,
+                                width: 600,
+                                padding: '3em',
+                                backdrop: `
+            rgba(0, 0, 123, 0.4)
+            url("/static/images/kurukuru.gif")
+            center top
+            no-repeat
+                `
+                            });
+                        } else {
+                            var audio = new Audio('/static/audios/kurukuru.mp3');
+                            audio.play();
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'No Anomaly Detected!',
+                                text: 'No Anomaly Detected!',
+                                timer: 1500,
+                                width: 600,
+                                padding: '3em',
+                                backdrop: `
+            rgba(0, 0, 123, 0.4)    
+            url("/static/images/kurukuru.gif")
+            center top
+            no-repeat
+                `
+                            });
+                        }
+
+                    }
+
+
 
                 })
                 .catch((error) => {

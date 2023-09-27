@@ -19,6 +19,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from django.conf import settings
 from glob import glob
+from image_input.utils import compute_anomaly_score
 
 SIFT_sample_keypoints, SIFT_sample_descriptors = None, None
 
@@ -552,14 +553,22 @@ def anomalyDetection(request):
         return JsonResponse({'success': False, 'message': 'Invalid method'})
     form_data = request.POST
 
-    global original_image_path_reference
     original_image_path_random = "/".join(form_data.get('image').split("/")[3:]) 
 
-    original_image_path_reference = (UploadedImage.objects.filter(image_label='normal').order_by('?').first()).image_url if original_image_path_reference == None else original_image_path_reference
+    original_image_path_reference = (UploadedImage.objects.filter(image_label='normal').order_by('?').first()).image_url
 
     # if first character is a slash, remove it
     if original_image_path_reference[0] == '/':
         original_image_path_reference = original_image_path_reference[1:]
+
+    if form_data.get('detection-radio') == "deep-learning":
+        anomaly_score = compute_anomaly_score(original_image_path_random)
+        print(anomaly_score)
+        if anomaly_score > 0.00184:
+            label = 'anomaly'
+        else:
+            label = 'normal'
+        return JsonResponse({'success': True, 'message': 'Image anomaly detected successfully!', 'label': label, 'type': 'deep-learning', 'anomaly_score': float(anomaly_score)})
 
     #generate a unique filename using UUID
     new_image_path = os.path.join('media', 'uploaded_images', f"anomaly_detection_{uuid.uuid4().hex}.jpg")
@@ -667,9 +676,6 @@ def visualize_results(input_img, reference_img):
     """
     # Displaying input and reference images with contours
     fig, axes = plt.subplots(1, 2, figsize=(12, 6))
-
-    print(type(original_image_path_random), original_image_path_random)
-    print(type(original_image_path_reference), original_image_path_reference)
 
     input_contours = get_contours(input_img)
     reference_contours = get_contours(reference_img)
